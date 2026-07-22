@@ -1,0 +1,35 @@
+# Secrets — NEVER commit connection strings or keys
+*.env
+.env
+*connection*string*
+secrets.*
+
+# Generated data (too big / reproducible)
+*.jsonl
+*.csv
+sample_readings*
+weather_history*
+weather_forecast*
+dim_*.csv
+
+# Power BI temp
+*.pbix.tmp
+*~$*
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Delta / local lake artifacts
+_delta_log/
+*.parquet
