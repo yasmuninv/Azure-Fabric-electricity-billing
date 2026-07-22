@@ -86,26 +86,31 @@ seven reference/dimension tables. No typing, no cleaning; schema kept permissive
 ## 🗂️ Repository structure
 
 ```
-electricity-billing-fabric/
+Azure-Fabric-electricity-billing/
 ├── README.md
 ├── .gitignore
-├── data-generation/
-│   ├── smartmeter_generator.py     # single source of truth for fleet/location/window config
-│   ├── weather_source.py           # Open-Meteo history + forecast, tidy hourly frames
-│   └── reference_builder.py        # dim_customer, dim_meter, dim_tariff, SCD2 tariff history, dim_date
-├── ingestion/
-│   └── send_to_fabric.py           # streams generated readings into a Fabric Eventstream
-├── transformations/
-│   ├── build_silver_local.py       # Bronze → Silver (dedup, quarantine, as-of join)
-│   └── build_gold_local.py         # Silver → Gold (fact + cost model + aggregates)
-├── utils/
-│   ├── smartmeter_inspect.py
-│   ├── smartmeter_viewer.py
-│   └── smartmeter_viewer_table.py
-├── powerbi/
-│   ├── energy_theme.json           # custom Power BI theme
-│   └── screenshots/
-└── docs/                           # phase-by-phase build guides (PDF)
+│
+│   # Data generation — single source of truth for config
+├── smartmeter_generator.py     # fleet/location/window config + reading generator
+├── weather_source.py           # Open-Meteo history + forecast, tidy hourly frames
+├── reference_builder.py        # dim_customer, dim_meter, dim_tariff, SCD2 tariff history, dim_date
+│
+│   # Ingestion
+├── send_to_fabric.py           # streams generated readings into a Fabric Eventstream
+│
+│   # Medallion transformations (local deltalake → OneLake)
+├── load_bronze_local.py        # batch load: weather + reference dims into Bronze
+├── load_silver_local.py        # Bronze → Silver (dedup, quarantine, SCD2 as-of join)
+├── load_gold_local.py          # Silver → Gold (fact + cost model + aggregates)
+│
+│   # Utilities
+├── smartmeter_inspect.py
+├── smartmeter_viewer.py
+├── smartmeter_viewer_table.py
+│
+│   # Power BI
+├── energy_theme.json           # custom Power BI theme
+└── screenshots/                # report page screenshots
 ```
 
 ---
@@ -124,19 +129,20 @@ field parameters, what-if, RLS)` · `Open-Meteo API`
 pip install azure-eventhub requests pandas deltalake azure-identity
 
 # 1. Generate a year of readings locally
-python data-generation/smartmeter_generator.py      # -> sample_readings.jsonl
+python smartmeter_generator.py                  # -> sample_readings.jsonl
 
 # 2. Stream live readings into your Fabric Eventstream
 export FABRIC_ES_CONNECTION_STRING="Endpoint=sb://...;EntityPath=..."
-python ingestion/send_to_fabric.py                  # replay mode by default
+python send_to_fabric.py                         # replay mode by default
 
 # 3. Pull weather + build reference dimensions
-python data-generation/weather_source.py
-python data-generation/reference_builder.py
+python weather_source.py
+python reference_builder.py
 
-# 4. Build Silver and Gold (local, against OneLake)
-python transformations/build_silver_local.py
-python transformations/build_gold_local.py
+# 4. Load Bronze, then build Silver and Gold (local, against OneLake)
+python load_bronze_local.py
+python load_silver_local.py
+python load_gold_local.py
 ```
 
 > The transformations also exist as Fabric notebooks; the local `deltalake` scripts write
@@ -159,3 +165,4 @@ python transformations/build_gold_local.py
 ---
 
 *Built as a hands-on learning project to demonstrate an end-to-end modern data platform.*
+
